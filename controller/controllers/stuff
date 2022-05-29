@@ -1,0 +1,107 @@
+const Carre = require('../models/Carre');
+
+exports.createPlateau = (req, res, next) => {
+  delete req.body._id;
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      const carre = new Carre({
+        positionX: i,
+        positionY: j,
+        contenu: 0
+      });
+      carre.save()
+        .then(() => res.status(201).json({ message: 'Case enregistrée !'}))
+        .catch(error => res.status(400).json({ error }));
+    }
+ }
+};
+
+exports.modifyCarre = (req, res, next) => {
+  if (req.body.contenu == 0) {
+    Carre.updateOne({ _id: req.params.id }, { ...req.body, _id: req.params.id })
+      .then(() => res.status(200).json({ message: 'Case modifiée !'}))
+      .catch(error => res.status(400).json({ error }));
+    verifyVictory();
+  } else {
+    console.log('la case sélectionnée est déjà remplie');
+    // communicate the error to the view
+  }
+  };
+
+exports.getOneCarre = (req, res, next) => {
+    Carre.findOne({ _id: req.params.id })
+      .then(carre => res.status(200).json(carre))
+      .catch(error => res.status(404).json({ error }));
+  };
+
+
+// FONCTIONS
+
+function verifyVictory(){           // test if the game should continue
+
+  // Let collect the board
+  let plateau = [
+  Carre.findOne( {X: 0} && {Y: 0}).contenu,
+  Carre.findOne( {X: 0} && {Y: 1}).contenu,
+  Carre.findOne( {X: 0} && {Y: 2}).contenu,
+  Carre.findOne( {X: 1} && {Y: 0}).contenu,
+  Carre.findOne( {X: 1} && {Y: 1}).contenu,
+  Carre.findOne( {X: 1} && {Y: 2}).contenu,
+  Carre.findOne( {X: 2} && {Y: 0}).contenu,
+  Carre.findOne( {X: 2} && {Y: 1}).contenu,
+  Carre.findOne( {X: 2} && {Y: 2}).contenu
+  ];
+
+  // All this sum represents differents issues of victory
+  let sumh_1 = 0;
+  let sumh_2 = 0;
+  let sumh_3 = 0;
+  let sumv_1 = 0;
+  let sumv_2 = 0;
+  let sumv_3 = 0;
+  
+  // We calculate the previous sum
+  for (let i = 0; i < 3; i++) {
+      sumh_1 += plateau[i];
+      sumh_2 += plateau[i+3];
+      sumh_3 += plateau[i+6];
+      sumv_1 += plateau[3*i];
+      sumv_2 += plateau[3*i+1];
+      sumv_3 += plateau[3*i+2];
+      sumd_1 += plateau[4*i];
+      sumd_2 += plateau[2*(i+1)]
+    }
+  
+  // victory tests
+  if((sumh_1 == 3) || (sumh_2 == 3) || (sumh_3 == 3) || (sumv_1 == 3) || (sumv_2 == 3) || (sumv_3 == 3) || (sumd_1 == 3) || (sumd_2 == 3)) {
+    endgame("player1");
+  }
+  if((sumh_1 == -3) || (sumh_2 == -3) || (sumh_3 == -3) || (sumv_1 == -3) || (sumv_2 == -3) || (sumv_3 == -3) || (sumd_1 == -3) || (sumd_2 == -3)) {
+    endgame("player2");
+  }
+}
+
+// egality case
+if (!(0 in plateau)) {
+  endgame('egality');
+}
+
+
+function endgame(result){     // communicate the result to the view
+  console.log('Fin de la Partie')
+  if (result == 'player1') {
+    console.log('Player1 is the winner');
+  } else if (result == 'player2') {
+    console.log('Player2 is the winner');
+  } else {
+    console.log('No one has won')
+  }
+  deletePlateau();
+}
+
+
+function deletePlateau() {    // delete all the Case
+  Carre.deleteMany();
+}
+
+
