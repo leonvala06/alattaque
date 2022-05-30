@@ -4,12 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-<<<<<<< HEAD
     "test": "echo \"Error: no test specified\" && exit 1",
     "serve": "nodemon app.js"
-=======
-    "test": "echo \"Error: no test specified\" && exit 1"
->>>>>>> 38b86f042ec010b22d7e21951b407a59c43c2198
   },
   "keywords": [],
   "author": "",
