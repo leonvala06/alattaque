@@ -3,9 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import axios from 'axios';
 
-const api = axios.create({
-  baseURL: 'http://localhost:3000'
-})
+const baseURL = 'http://localhost:3000';
 
 function Square(props) {
   return (
@@ -15,21 +13,8 @@ function Square(props) {
   );
 }
 
+
 class Board extends React.Component {
-
-  constructor() {
-    super();
-    api.get('/').then(res => {
-      console.log(res.data)
-    })
-  }
-
-  createCourse = async () => {
-    let res = await api.post('/', { title:'Test', id: 4, author: 'test'
-  })
-  console.log(res)
-  }
-
 
   renderSquare(i) {
     return (
@@ -82,6 +67,11 @@ class Game extends React.Component {
     const history = this.state.history.slice(0, this.state.stepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
+
+    axios.post(baseURL, 'x')
+    .then(res => console.log(res))
+    .catch(err => console.log(err));
+
     if (calculateWinner(squares) || squares[i]) {
       return;
     }
