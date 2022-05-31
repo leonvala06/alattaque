@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 const axios = require('axios');
+const controlerURL = "http://localhost:4000"
 
 function Square(props) {
   return (
@@ -50,6 +51,7 @@ class Game extends React.Component {
     this.state = {
       squares: Array(9).fill(null),
       xIsNext: true,
+      user: null
     };
   }
 
@@ -67,6 +69,18 @@ class Game extends React.Component {
       return;
     }
     squares[i] = this.state.xIsNext ? 'X' : 'O';
+    
+    // demander au controleur l'autorisation
+    axios.post(controlerURL, {
+      user: this.state.user
+    })
+    .then(function (response) {
+      console.log(response.data);
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
+
     this.setState({
       squares: squares,
       xIsNext: !this.state.xIsNext,
@@ -96,6 +110,12 @@ class Game extends React.Component {
         </div>
         <div className="game-info">
           <div>{status}</div>
+          <ul>
+            <button onClick={(elt) => {elt.currentTarget.disabled = true;this.setState({user: "X"})}}>{"Joueur X"}</button>
+          </ul>
+          <ul>
+            <button onClick={(elt) => {elt.currentTarget.disabled = true;this.setState({user: "O"})}}>{"Joueur O"}</button>
+          </ul>
         </div>
       </div>
     );
