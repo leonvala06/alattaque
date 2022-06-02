@@ -3,6 +3,6 @@ const router = express.Router();
 const stuffCtrl = require('../controllers/stuffTest');
 
 router.post('/', stuffCtrl.paust);
-router.get('/:id', stuffCtrl.gait);
+router.get('/', stuffCtrl.gait);
 
 module.exports = router;

@@ -1,12 +1,13 @@
-const { default: axios } = require('axios');
 const express = require('express');
 const app = express();
 const port = 3000;
 const path_react_app = 'C:/Users/Tristan/Documents/Stratego/alattaque/client_3000/build';
-const stuffRoutes = require('./routes/stuffTest');
 
+
+//const stuffRoutes = require('./routes/stuffTest');
 app.use(express.static(path_react_app))
-app.use(express.json());
+app.use(express.json()); 
+
 
 // Eviter les problèmes de connection que l'utilisateur peut rencontrer pour des raisons de sécurité
 app.use((req, res, next) => {
@@ -15,12 +16,22 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     next();
   });
+/*
+//app.use('/api/stuffTest', stuffRoutes);*/
 
-//app.use('/api/stuffTest', stuffRoutes);
 
-app.post('/', (req, res, next) => {
+app.post('/', (req, res, next) => {     // Vérifier l'attribut du joueur
     console.log('post reçu');
+    console.log(req);
+    res.send(req.body.nom);
+    next();
+  });
+
+app.post('/', (req, res, next) => {       // Changer l'attribut du joueur
+    console.log('post reçu');
+    console.log(req.body);
     res.send(req.body.user)
+    next();
   });
 
 

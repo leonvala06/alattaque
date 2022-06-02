@@ -2,8 +2,7 @@ import React, { Fragment, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import axios from 'axios';
-
-const baseURL = 'http://localhost:3000';
+const controlerURL = 'http://localhost:3000'
 
 function Square(props) {
   return (
@@ -68,9 +67,16 @@ class Game extends React.Component {
     const current = history[history.length - 1];
     const squares = current.squares.slice();
 
-    axios.post(baseURL, 'x')
-    .then(res => console.log(res))
-    .catch(err => console.log(err));
+    axios.post(controlerURL, {
+      nom: "ok",
+      nom2: 'c est parti'
+    })
+    .then(function (response) {
+      console.log(response.data);
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
 
     if (calculateWinner(squares) || squares[i]) {
       return;
@@ -89,6 +95,7 @@ class Game extends React.Component {
       xIsNext: !this.state.xIsNext
     });
   }
+
 
   jumpTo(step) {
     this.setState({
