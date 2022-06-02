@@ -50,42 +50,65 @@ class Game extends React.Component {
     super(props);
     this.state = {
       squares: Array(9).fill(null),
-      xIsNext: true,
       user: null
     };
   }
 
-  update(newState) {
-    const squares = newState;
-    this.setState({
-      squares: squares,
-      xIsNext: !this.state.xIsNext,
+  getUpdate() {
+    const leGame = this;
+
+    axios.get(controlerURL + "/getUpdate")
+    .then(function (response) {
+      const newSquares = response.data; 
+      // handle success
+      leGame.setState({
+        squares: newSquares,
+      });
+    })
+    .catch(function (error) {
+      // handle error
+      console.log(error);
     });   
+  }
+  sendUpdate(newSquares) {
+    axios.post(controlerURL + "/sendUpdate", {
+      squares: newSquares
+    });
   }
 
   handleClick(i) {
-    const squares = this.state.squares.slice();
-    if (calculateWinner(squares) || squares[i]) {
-      return;
-    }
-    squares[i] = this.state.xIsNext ? 'X' : 'O';
-    
     // demander au controleur l'autorisation
-    axios.post(controlerURL, {
-      user: this.state.user
-    })
-    .then(function (response) {
-      console.log(response.data);
-    })
-    .catch(function (error) {
-      console.log(error);
-    });
+    const leGame = this;
+   axios.post(controlerURL, {
+     user: this.state.user
+   })
+   .then(function (res) {
+    const data = res.data;
+    console.log(data);
 
-    this.setState({
-      squares: squares,
-      xIsNext: !this.state.xIsNext,
-    });
-  }
+    // faire les modifs en fonction
+    const squares = leGame.state.squares.slice();
+      
+    if(data === "OK") {
+       console.log("entered authorised");
+       leGame.setState({
+         squares: squares,
+        });
+        if (calculateWinner(squares) || squares[i]) {
+         return;
+         }
+        squares[i] = leGame.state.user;
+
+    // renvoyer le nouveau tableau
+         leGame.sendUpdate(squares);
+   }
+  })
+  .catch(function (error) {
+    console.log(error);
+  });
+}
+
+  
   
   render() {
     const winner = calculateWinner(this.state.squares);
@@ -115,6 +138,9 @@ class Game extends React.Component {
           </ul>
           <ul>
             <button onClick={(elt) => {elt.currentTarget.disabled = true;this.setState({user: "O"})}}>{"Joueur O"}</button>
+          </ul>
+          <ul>
+            <button onClick={() => this.getUpdate()}>{"Update"}</button>
           </ul>
         </div>
       </div>
