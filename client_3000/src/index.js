@@ -50,7 +50,8 @@ class Game extends React.Component {
     super(props);
     this.state = {
       squares: Array(9).fill(null),
-      user: null
+      user: null,
+      xIsNext: null
     };
   }
 
@@ -58,11 +59,13 @@ class Game extends React.Component {
     const leGame = this;
 
     axios.get(controlerURL + "/getUpdate")
-    .then(function (response) {
-      const newSquares = response.data; 
+    .then(response => {
+      const newSquares = response.data.squares;
+      const xTurn = response.data.xIsNext;
       // handle success
       leGame.setState({
         squares: newSquares,
+        xIsNext: xTurn
       });
     })
     .catch(function (error) {
@@ -70,48 +73,57 @@ class Game extends React.Component {
       console.log(error);
     });   
   }
+
   sendUpdate(newSquares) {
     axios.post(controlerURL + "/sendUpdate", {
       squares: newSquares
     });
   }
 
-  handleClick(i) {
-    // demander au controleur l'autorisation
-    const leGame = this;
-   axios.post(controlerURL, {
-     user: this.state.user
-   })
-   .then(function (res) {
-    const data = res.data;
-    console.log(data);
+  isMyTurn() {
+    if (this.state.user === 'X' && this.state.xIsNext)
+      return true;
+    else if (this.state.user === 'O' && !this.state.xIsNext)
+      return true;
+    else
+      return false;
+  }
 
-    // faire les modifs en fonction
-    const squares = leGame.state.squares.slice();
-      
-    if(data === "OK") {
+  handleClick(i) {
+    if(this.isMyTurn) {
+      const squares = this.state.squares.slice();
        console.log("entered authorised");
-       leGame.setState({
+       this.setState({
          squares: squares,
         });
         if (calculateWinner(squares) || squares[i]) {
          return;
          }
-        squares[i] = leGame.state.user;
+        squares[i] = this.state.user;
 
-    // renvoyer le nouveau tableau
-         leGame.sendUpdate(squares);
-   }
-  })
-  .catch(function (error) {
-    console.log(error);
-  });
+      // renvoyer le nouveau tableau
+      this.sendUpdate(squares);
+    }
 }
 
-  
+selectPlayer(player, elt) {
+  let joueur;
+
+  if(!this.state.user) {
+    this.setState({user: player});
+    joueur = '<ul><button onClick={(elt) => this.selectPlayer("X", elt) }>{"Joueur X"}</button></ul><ul><button onClick={(elt) => this.selectPlayer("O", elt)}>{"Joueur O"}</button></ul>';
+  }
+  else {
+    joueur = null;
+  }
+
+  return joueur;
+}  
   
   render() {
     const winner = calculateWinner(this.state.squares);
+    const player = 'Player: ' + this.state.user;
+    const joueur = (<><ul><button onClick={(elt) => this.selectPlayer("X", elt)}>{"Joueur X"}</button></ul><ul><button onClick={(elt) => this.selectPlayer("O", elt)}>{"Joueur O"}</button></ul></>);
 
     let status;
     if (winner) {
@@ -119,6 +131,7 @@ class Game extends React.Component {
     } else {
       status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
     }
+    
 
     return (
       <div className="game">
@@ -132,13 +145,9 @@ class Game extends React.Component {
           />
         </div>
         <div className="game-info">
+        <div>{player}</div>
           <div>{status}</div>
-          <ul>
-            <button onClick={(elt) => {elt.currentTarget.disabled = true;this.setState({user: "X"})}}>{"Joueur X"}</button>
-          </ul>
-          <ul>
-            <button onClick={(elt) => {elt.currentTarget.disabled = true;this.setState({user: "O"})}}>{"Joueur O"}</button>
-          </ul>
+            {joueur}
           <ul>
             <button onClick={() => this.getUpdate()}>{"Update"}</button>
           </ul>

@@ -11,7 +11,10 @@ app.use(express.json());
 app.get('/getUpdate', (req, res ) => {
     // allowed
     console.log("Get update received");
-    res.json(squares);
+    res.json({
+        squares: squares,
+        xIsNext: xIsNext
+    });
 })
 
 app.post('/sendUpdate', (req, res ) => {
@@ -20,22 +23,6 @@ app.post('/sendUpdate', (req, res ) => {
     squares = req.body.squares;
     console.log(req.body.squares);
 })
-
-app.post('/', (req, res ) => {
-    // allowed
-    console.log("Received");
-    if (xIsNext && req.body.user === 'X') {
-        res.send("OK");
-        xIsNext = !xIsNext;
-    }
-    else if (!xIsNext && req.body.user === 'O') {
-        res.send("OK");
-        xIsNext = !xIsNext;
-    }
-    else
-       res.send("KO");
-})
-
 
 app.listen(port, () => {
       console.log(`App listening at http://localhost:${port}`)
