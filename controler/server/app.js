@@ -22,6 +22,11 @@ app.post('/sendUpdate', (req, res ) => {
     console.log("Send update received");
     squares = req.body.squares;
     console.log(req.body.squares);
+    xIsNext = !xIsNext;
+    res.json({
+        squares: squares,
+        xIsNext: xIsNext
+    });
 })
 
 app.listen(port, () => {

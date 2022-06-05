@@ -55,8 +55,7 @@ class Game extends React.Component {
     };
   }
 
-  getUpdate() {
-    const leGame = this;
+  getUpdate(leGame) {
 
     axios.get(controlerURL + "/getUpdate")
     .then(response => {
@@ -75,9 +74,17 @@ class Game extends React.Component {
   }
 
   sendUpdate(newSquares) {
-    axios.post(controlerURL + "/sendUpdate", {
+    const leGame = this;
+    const promise = axios.post(controlerURL + "/sendUpdate", {
       squares: newSquares
+    })
+    .then(response => {
+      const xTurn = response.data.xIsNext;
+      leGame.setState({
+        xIsNext: xTurn
+      })
     });
+    return promise;
   }
 
   isMyTurn() {
@@ -90,7 +97,8 @@ class Game extends React.Component {
   }
 
   handleClick(i) {
-    if(this.isMyTurn) {
+    if(this.isMyTurn()) {
+      console.log("It is my turn");
       const squares = this.state.squares.slice();
        console.log("entered authorised");
        this.setState({
@@ -102,28 +110,21 @@ class Game extends React.Component {
         squares[i] = this.state.user;
 
       // renvoyer le nouveau tableau
-      this.sendUpdate(squares);
+      this.sendUpdate(squares)
+      setInterval(this.getUpdate, 1000, this);
     }
 }
 
-selectPlayer(player, elt) {
-  let joueur;
-
+selectPlayer(player) {
   if(!this.state.user) {
     this.setState({user: player});
-    joueur = '<ul><button onClick={(elt) => this.selectPlayer("X", elt) }>{"Joueur X"}</button></ul><ul><button onClick={(elt) => this.selectPlayer("O", elt)}>{"Joueur O"}</button></ul>';
   }
-  else {
-    joueur = null;
-  }
-
-  return joueur;
 }  
   
   render() {
     const winner = calculateWinner(this.state.squares);
     const player = 'Player: ' + this.state.user;
-    const joueur = (<><ul><button onClick={(elt) => this.selectPlayer("X", elt)}>{"Joueur X"}</button></ul><ul><button onClick={(elt) => this.selectPlayer("O", elt)}>{"Joueur O"}</button></ul></>);
+    const joueur = this.state.user ? null : (<><ul><button onClick={() => this.selectPlayer("X")}>{"Joueur X"}</button></ul><ul><button onClick={() => this.selectPlayer("O")}>{"Joueur O"}</button></ul></>);
 
     let status;
     if (winner) {
@@ -149,7 +150,7 @@ selectPlayer(player, elt) {
           <div>{status}</div>
             {joueur}
           <ul>
-            <button onClick={() => this.getUpdate()}>{"Update"}</button>
+            <button onClick={() => this.getUpdate(this)}>{"Update"}</button>
           </ul>
         </div>
       </div>
