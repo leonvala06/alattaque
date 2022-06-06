@@ -1,8 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-const axios = require('axios');
-const controlerURL = "http://localhost:4000"
+const AXIOS = require('axios');
+const URL_TO_SERVER = "http://localhost:4000";
+
+var interval = null;
+const REFRENSHING_RATE = 500;
 
 function Square(props) {
   return (
@@ -55,17 +58,31 @@ class Game extends React.Component {
     };
   }
 
-  getUpdate(leGame) {
+  setSquares(squares) {
+    this.setState({
+        squares: squares,
+      });
+  }
+  setXturn(xTurn) {
+    this.setState({
+      xIsNext: xTurn
+    });
 
-    axios.get(controlerURL + "/getUpdate")
+  }
+  getUpdate(leGame) {
+    console.log("Getting update");
+    AXIOS.get(URL_TO_SERVER + "/getUpdate")
     .then(response => {
       const newSquares = response.data.squares;
       const xTurn = response.data.xIsNext;
-      // handle success
-      leGame.setState({
-        squares: newSquares,
-        xIsNext: xTurn
-      });
+      
+      leGame.setSquares(newSquares);
+      leGame.setXturn(xTurn);
+
+      if (calculateWinner(newSquares)) {
+        console.log("Clearing interval");
+        clearInterval(interval);
+      }
     })
     .catch(function (error) {
       // handle error
@@ -75,14 +92,12 @@ class Game extends React.Component {
 
   sendUpdate(newSquares) {
     const leGame = this;
-    const promise = axios.post(controlerURL + "/sendUpdate", {
+    const promise = AXIOS.post(URL_TO_SERVER + "/sendUpdate", {
       squares: newSquares
     })
     .then(response => {
       const xTurn = response.data.xIsNext;
-      leGame.setState({
-        xIsNext: xTurn
-      })
+      leGame.setXturn(xTurn);
     });
     return promise;
   }
@@ -107,17 +122,20 @@ class Game extends React.Component {
         if (calculateWinner(squares) || squares[i]) {
          return;
          }
-        squares[i] = this.state.user;
+        squares[i] = this.state.user;       
 
-      // renvoyer le nouveau tableau
-      this.sendUpdate(squares)
-      setInterval(this.getUpdate, 1000, this);
+      // send back new tab
+      this.sendUpdate(squares);
     }
 }
 
 selectPlayer(player) {
   if(!this.state.user) {
     this.setState({user: player});
+  }
+  if(!interval) {
+    console.log("Setting interval");
+    interval = setInterval(this.getUpdate, REFRENSHING_RATE, this);
   }
 }  
   
@@ -148,10 +166,8 @@ selectPlayer(player) {
         <div className="game-info">
         <div>{player}</div>
           <div>{status}</div>
-            {joueur}
-          <ul>
-            <button onClick={() => this.getUpdate(this)}>{"Update"}</button>
-          </ul>
+          <div>{joueur}</div>
+          <div><button onClick={() => this.setSquares([null, null, null, null, null, null, null, null, null])}>{"New Game"}</button></div>
         </div>
       </div>
     );
