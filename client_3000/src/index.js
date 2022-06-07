@@ -67,22 +67,37 @@ class Game extends React.Component {
     const current = history[history.length - 1];
     const squares = current.squares.slice();
 
-    axios.post(controlerURL, {
-      nom: "ok",
-      nom2: 'c est parti'
-    })
+    let pk = this.state.xIsNext;
+    let initialisation = false;
+
+    axios.get(controlerURL)
     .then(function (response) {
-      console.log(response.data);
+      console.log("réponse get reçue !");
+      console.log('REPONSE : ' + response)
     })
     .catch(function (error) {
       console.log(error);
     });
 
+    axios.post(controlerURL, {
+      casesDuJeu: squares,
+      init: initialisation,
+      caseSelectionnee: i,
+      joueur: pk
+    })
+    .then(function (response) {
+      console.log("réponse post reçue !");
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
+    
+
     if (calculateWinner(squares) || squares[i]) {
       return;
     }
 
-    console.log('le coup est joué');
+    console.log('le coup est joué !');
 
     squares[i] = this.state.xIsNext ? "X" : "O";
     this.setState({

@@ -19,21 +19,30 @@ app.use((req, res, next) => {
 /*
 //app.use('/api/stuffTest', stuffRoutes);*/
 
+///// FONCTIONS /////
+
+
+
+///// ROUTES PRINCIPALES /////
 
 app.post('/', (req, res, next) => {     // Vérifier l'attribut du joueur
     console.log('post reçu');
-    console.log(req);
-    res.send(req.body.nom);
-    next();
-  });
+    console.log(req.body);
 
-app.post('/', (req, res, next) => {       // Changer l'attribut du joueur
+    xIsNext = !(req.body.joueur);     // Changer l'attribut du joueur
+    
+
+
+    res.send('ensemble des informations');
+  });
+/* 
+app.post('/', (req, res, next) => {       
     console.log('post reçu');
     console.log(req.body);
     res.send(req.body.user)
     next();
   });
-
+*/
 
 app.listen(port, () => {
     console.log(`App listening at http://localhost:${port}`)
