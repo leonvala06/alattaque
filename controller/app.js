@@ -1,25 +1,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const path_react_app = 'C:/Users/Tristan/Documents/Stratego/alattaque/client_3000/build';
+const path_react_app = '../client_3000/build';
 //const stuffRoutes = require('./routes/stuff');
 const app = express();
-const Board = require('../model/Board');
-
-// A SUPPRIMER QUAND LA FONCTION INIT EST AU POINT
-const firstBoard = new Board({
-  cases: Array(9).fill(null),
-  tour: 0,
-  issue: null
-});
-firstBoard.idPrecedent = firstBoard._id;
-firstBoard.save()
-.then(() => console.log('plateau initialisé'))
-.catch(error => console.log(error));
-console.log('PREMIER PLATEAU: ' + firstBoard);
-
-let idBoard = firstBoard._id;
-let tour = 0;
-let issue = firstBoard.issue;
+//const Board = require('../model2/Board');
 
 // URL de la db en local
 const url = "mongodb://localhost:27017/"
@@ -39,8 +23,46 @@ const db = mongoose.connection;
 db.on("error", (error) => console.error(error));
 db.once("open", () => console.log("Connected to the database !"));
 
+// Let's drop the collection
+db.dropCollection(
+  "board3",
+  function(err, result) {
+  console.log("Collection droped");
+  }
+  );
+  
+// A SUPPRIMER QUAND LA FONCTION INIT EST AU POINT
+const boardSchema = mongoose.Schema({
+  cases: { type: Array, required: true },
+  tour: { type: Number, required: true },
+  joueur: { type: String },
+  idPrecedent: { type: Object, required: true },
+  issue: { type: String }
+});
+
+const Board3 = mongoose.model('Board3', boardSchema);
+
+const firstBoard = new Board3({
+  cases: Array(9).fill(null),
+  tour: 0,
+  issue: null
+});
+firstBoard.idPrecedent = firstBoard._id;
+
+/*firstBoard.save()
+.then(() => {
+  console.log('plateau initialisé');
+  console.log('PREMIER PLATEAU: ' + firstBoard);
+}
+)
+.catch(error => console.log(error));
+*/
+let idBoard = firstBoard._id;
+let tour = 0;
+let issue = firstBoard.issue;
 
 // Création d'une version statique de React
+
 app.use(express.static(path_react_app))
 
 // Conversion en JSON
@@ -106,7 +128,7 @@ function getAttribute(attribut) {
 }
 
 function updateBoard(casesDuJeu, tourDuJeu, idBoard, caseSelectionnee, attribut) { 
-  const newPlateau = new Board({
+  const newPlateau = new Board3({
     cases: casesDuJeu,
     tour: tourDuJeu,
     joueur: getAttribute(attribut),
@@ -165,7 +187,7 @@ function gameIssue(newPlateau) {
 
 // Fin du jeu
 function deleteBoard(idDernierPlateau) {
-    Board.deleteOne({ _id: idDernierPlateau })
+    Board3.deleteOne({ _id: idDernierPlateau })
       .then(() => console.log('plateau supprimé'))
       .catch((err) => console.log(err))
 }
@@ -221,5 +243,14 @@ app.delete('/', (req, res, next) => {
   res.send('Terminator')
 });
 
+app.get('/db', (req, res) => {
+  Board3.find({}, (err, found) => {
+      if (!err) {
+          res.send(found);
+      }
+      console.log(err);
+      res.send("Some error occured!")
+  })
+});
 
 module.exports = app;
