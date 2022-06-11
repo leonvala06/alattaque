@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const path_react_app = '../client_3000/build';
+const path_react_app = '../client_3000_copy/build';
 //const stuffRoutes = require('./routes/stuff');
 const app = express();
 //const Board = require('../model2/Board');
@@ -45,29 +45,27 @@ const Board3 = mongoose.model('Board3', boardSchema);
 const firstBoard = new Board3({
   cases: Array(9).fill(null),
   tour: 0,
+  joueur: 'O',
   issue: null
 });
 firstBoard.idPrecedent = firstBoard._id;
 
-/*firstBoard.save()
+firstBoard.save()
 .then(() => {
   console.log('plateau initialisé');
   console.log('PREMIER PLATEAU: ' + firstBoard);
 }
 )
 .catch(error => console.log(error));
-*/
+
 let idBoard = firstBoard._id;
 let tour = 0;
 let issue = firstBoard.issue;
 
 // Création d'une version statique de React
-
 app.use(express.static(path_react_app))
-
 // Conversion en JSON
 app.use(express.json());
-
 // Eviter les problèmes de connection que l'utilisateur peut rencontrer pour des raisons de sécurité
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -99,15 +97,17 @@ function initialiseBoard(init) {
     return board;
   }
 }
-
+/*
 function getBoard(idPlateau) {
-  Board.findOne({ _id: idPlateau })
+  console.log("Je rendre dans le getBoard");
+  Board3.findOne({ _id: idPlateau })
     .then(board => { 
       console.log('plateau récupéré' + board);
-      return board;
+      return board
     })
     .catch(err => console.log('erreur de récupération : ' + err));
 }
+*/
 
 // Validation de cette phase de jeu
 function getIssueVerification(issuePlateau) {
@@ -194,12 +194,21 @@ function deleteBoard(idDernierPlateau) {
 
 /////  ROUTES FONCTIONNELLES  /////
 
-app.get('/', (req, res, next) => {
-  console.log('get reçu');
-  //console.log('CORPS DE LA REQUETE :');
-  //console.log(req.body);
-
-  res.send(getBoard(idBoard))
+app.get("/getupdate", (req, res, next) => {
+  Board3.findOne({ _id: idBoard })
+    .then(board => { 
+      console.log('Get reçu' + board);
+      
+      let xIs = board.joueur == 'X' ? true : false;
+      let xIsNext = changePlayer(xIs);
+      let newSquares = board.cases;
+      console.log(newSquares);
+      res.json({
+        newSquares: newSquares,
+        xIsNext: xIsNext
+      })
+    })
+    .catch(err => console.log('erreur de récupération : ' + err));
 });
 
 
@@ -248,8 +257,6 @@ app.get('/db', (req, res) => {
       if (!err) {
           res.send(found);
       }
-      console.log(err);
-      res.send("Some error occured!")
   })
 });
 
