@@ -104,8 +104,8 @@ class Game extends React.Component {
   sendUpdate(newSquares, i) {
     const leGame = this;
     AXIOS.post(URL_TO_SERVER, {
-      casesDuJeu: newSquares,
-      caseSelectionnee: i,
+      squares: newSquares,
+      selectedSquare: i,
       user: leGame.state.user
     })
     .then(response => {

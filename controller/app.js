@@ -1,14 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const path_react_app = '../client_3000_copy/build';
-//const stuffRoutes = require('./routes/stuff');
 const app = express();
-//const Board = require('../model2/Board');
+const Board = require('./models/Board');
 
-// URL de la db en local
+// URL of the local database
 const url = "mongodb://localhost:27017/"
 
-// Connection de la base de donnée MongoDB
+// database connexion
 mongoose.connect(url,  
 {
   useNewUrlParser: true,
@@ -21,49 +20,33 @@ db.once("open", () => console.log("Connected to the database !"));
 
 // Let's drop the collection
 db.dropCollection(
-  "board3",
+  "board",
   function(err, result) {
   console.log("Collection droped");
   }
   );
-  
-// MODELS
-const boardSchema = mongoose.Schema({
-  cases: { type: Array, required: true },
-  tour: { type: Number, required: true },
-  joueur: { type: String },
-  idPrecedent: { type: Object, required: true },
-  issue: { type: String }
-});
-const Board3 = mongoose.model('Board3', boardSchema);
 
 // Initialisation
-const firstBoard = new Board3({
-  cases: Array(9).fill(null),
-  tour: 0,
-  joueur: 'X',
+const firstBoard = new Board({
+  squares: Array(9).fill(null),
+  turn: 0,
+  attribute: 'X',
   issue: null
 });
-firstBoard.idPrecedent = firstBoard._id;
 
 firstBoard.save()
-.then(() => {
-  console.log('plateau initialisé');
-  console.log('PREMIER PLATEAU: ' + firstBoard);
-}
-)
 .catch(error => console.log(error));
 
-let tour = firstBoard.tour;
-let joueur = firstBoard.joueur;
+let turn = firstBoard.turn;
+let attribute = firstBoard.attribute;
 let issue = firstBoard.issue;
 let idBoard = firstBoard._id;
 
-// Création d'une version statique de React
-app.use(express.static(path_react_app))
-// Conversion en JSON
+// Creation of a static version of React
+app.use(express.static(path_react_app));
+// Conversion in JSON
 app.use(express.json());
-// Eviter les problèmes de connection que l'utilisateur peut rencontrer pour des raisons de sécurité
+// To avoid connexion problems which the user could have for security causes
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content, Accept, Content-Type, Authorization');
@@ -71,72 +54,64 @@ app.use((req, res, next) => {
     next();
   });
 
-//app.use('/api/stuff', stuffRoutes);
+/////  METHODS  /////
 
-/////  FONCTIONS  /////
-
-// Validation de cette phase de jeu
-function isMyTurnVerification(joueurPrecedent, joueurSuivant) {
-  console.log('joueur = ' + joueurPrecedent);
-  console.log('req.body.user = ' + joueurSuivant);
-  if(joueurPrecedent == joueurSuivant) {
+// Check this turn
+function isMyTurnVerification(precedentPlayer, nextPlayer) {
+  if(precedentPlayer == nextPlayer) {
     return true
   } else {
     return false
   }
 }
 
-function isNotOverVerification(issuePlateau) {
-  if(issuePlateau == null) {
+function isNotOverVerification(issue) {
+  if(issue == null) {
     return true
   } else {
     return false
   }
 }
 
-// Enregistrement de cette phase de jeu
-function getAttribut(joueur) {
-  if (joueur === true) {
+// Save this turn
+function getAttribute(player) {
+  if (player === true) {
     return 'X';
   } else {
     return 'O'
   }
 }
 
-function getJoueur(attribut) {
-  if (attribut === 'X') {
+function getPlayer(attribute) {
+  if (attribute === 'X') {
     return true;
   } else {
     return false
   }
 }
 
-function updateBoard(casesDuJeu, tourDuJeu, idBoard, caseSelectionnee, attribut) { 
-  const newPlateau = new Board3({
-    cases: casesDuJeu,
-    tour: tourDuJeu,
-    joueur: attribut,
-    idPrecedent: idBoard
+function updateBoard(squares, turn, selectedSquare, attribute) { 
+  const newBoard = new Board({
+    squares: squares,
+    turn: turn,
+    attribute: attribute
   });
 
-  newPlateau.cases[caseSelectionnee] = attribut;
-  console.log('plateau mis à jour');
-  
-  return newPlateau;
+  newBoard.squares[selectedSquare] = attribute;  
+  return newBoard;
 }
 
-function saveBoard(newPlateau) {
-  newPlateau.save()
-  .then(() => console.log('plateau sauvegardé !'))
+function saveBoard(newBoard) {
+  newBoard.save()
   .catch(error => console.log(error));
 }
 
-// Préparation de la prochaine phase de jeu
-function nextPlayer(joueur) {
-  return !(joueur);
+// Organise the next turn
+function nextPlayer(player) {
+  return !(player);
 }
 
-function gameIssue(newPlateau) {
+function gameIssue(newBoard) {
   const lines = [
     [0, 1, 2],
     [3, 4, 5],
@@ -150,36 +125,34 @@ function gameIssue(newPlateau) {
   // 1er cas : il y a un vainqueur
   for (let i = 0; i < lines.length; i++) {
     const [a, b, c] = lines[i];
-    if (newPlateau.cases[a] && newPlateau.cases[a] === newPlateau.cases[b] && newPlateau.cases[a] === newPlateau.cases[c]) {
-      newPlateau.issue = newPlateau.cases[a];
-      return newPlateau
+    if (newBoard.squares[a] && newBoard.squares[a] === newBoard.squares[b] && newBoard.squares[a] === newBoard.squares[c]) {
+      newBoard.issue = newBoard.squares[a];
+      return newBoard
     }
   };
   
   // 2e cas : il n'y a pas de vainqueur et toujours des cases vides.
   for (let i = 0; i < 9; i++) {
-    if (newPlateau.cases[i] == null) {
-      newPlateau.issue = null;
-      return newPlateau
+    if (newBoard.squares[i] == null) {
+      newBoard.issue = null;
+      return newBoard
     }
   };
 
   // 3e cas : il n'y a pas de vainqueur mais le plateau est rempli.
-  newPlateau.issue = 'égalité';
-  return newPlateau
+  newBoard.issue = 'egality';
+  return newBoard
 }
 
 
-/////  ROUTES FONCTIONNELLES  /////
+/////  ROADS  /////
 
 app.get("/getupdate", (req, res, next) => {
-  Board3.findOne({ _id: idBoard })
-    .then(board => { 
-      console.log('get reçu');
-      
-      let xIs = board.joueur == 'X' ? true : false;
+  Board.findOne({ _id: idBoard })
+    .then(board => {      
+      let xIs = board.player == 'X' ? true : false;
       let xIsNext = nextPlayer(xIs);
-      let newSquares = board.cases;
+      let newSquares = board.squares;
       let newIssue = board.issue;
 
       res.json({
@@ -188,27 +161,24 @@ app.get("/getupdate", (req, res, next) => {
         issue: newIssue
       })
     })
-    .catch(err => console.log('erreur de récupération : ' + err));
+    .catch(err => console.log('get error : ' + err));
 });
 
 app.post('/', (req, res, next) => {
-  console.log('post reçu');
 
-  // Validation de cette phase de jeu
-
-  let isMyTurn = isMyTurnVerification(joueur, req.body.user);
+  // Check this turn
+  let isMyTurn = isMyTurnVerification(attribute, req.body.user);
   let isNotOver = isNotOverVerification(issue);
 
   if (isMyTurn == true && isNotOver == true) {
-    // Enregistrement de cette phase de jeu
-    tour += 1;
-    const newBoard = updateBoard(req.body.casesDuJeu, tour, idBoard, req.body.caseSelectionnee, req.body.user);
+    // Save this turn
+    turn += 1;
+    const newBoard = updateBoard(req.body.squares, turn, req.body.selectedSquare, req.body.user);
     const finalBoard = gameIssue(newBoard);
     saveBoard(finalBoard);
 
-    // Préparation du prochain tour
-    joueur = getAttribut(nextPlayer(getJoueur(finalBoard.joueur)));
-    console.log('le nouveau joueur est : ' + joueur);
+    // Organise the next turn
+    attribute = getAttribute(nextPlayer(getPlayer(finalBoard.attribute)));
     issue = finalBoard.issue;
     idBoard = newBoard._id;
 
@@ -219,7 +189,7 @@ app.post('/', (req, res, next) => {
 });
 
 app.get('/db', (req, res) => {
-  Board3.find({}, (err, found) => {
+  Board.find({}, (err, found) => {
       if (!err) {
           res.send(found);
       }
