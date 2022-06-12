@@ -8,10 +8,6 @@ const app = express();
 // URL de la db en local
 const url = "mongodb://localhost:27017/"
 
-/* URL de la db sur le cloud Atlas
-const url = "mongodb+srv://napoleon:alattaque@cluster0.k7gtbcl.mongodb.net/?retryWrites=true&w=majority"
-*/
-
 // Connection de la base de donnée MongoDB
 mongoose.connect(url,  
 {
@@ -31,7 +27,7 @@ db.dropCollection(
   }
   );
   
-// A SUPPRIMER QUAND LA FONCTION INIT EST AU POINT
+// MODELS
 const boardSchema = mongoose.Schema({
   cases: { type: Array, required: true },
   tour: { type: Number, required: true },
@@ -39,13 +35,13 @@ const boardSchema = mongoose.Schema({
   idPrecedent: { type: Object, required: true },
   issue: { type: String }
 });
-
 const Board3 = mongoose.model('Board3', boardSchema);
 
+// Initialisation
 const firstBoard = new Board3({
   cases: Array(9).fill(null),
   tour: 0,
-  joueur: 'O',
+  joueur: 'X',
   issue: null
 });
 firstBoard.idPrecedent = firstBoard._id;
@@ -58,9 +54,10 @@ firstBoard.save()
 )
 .catch(error => console.log(error));
 
-let idBoard = firstBoard._id;
-let tour = 0;
+let tour = firstBoard.tour;
+let joueur = firstBoard.joueur;
 let issue = firstBoard.issue;
+let idBoard = firstBoard._id;
 
 // Création d'une version statique de React
 app.use(express.static(path_react_app))
@@ -78,39 +75,18 @@ app.use((req, res, next) => {
 
 /////  FONCTIONS  /////
 
-// Création & récupération du plateau de jeu
-function initialiseBoard(init) {
-  if (init === true) {
-    const firstBoard = new Board({
-      cases: Array(9).fill(null),
-      tour: 0
-    });
-    firstBoard.idPrecedent = firstBoard._id;
-    firstBoard.save()
-    .then(() => console.log('plateau initialisé'))
-    .catch(error => console.log(error));
-    console.log('PREMIER PLATEAU: ' + firstBoard);
-    
-    let idBoard = firstBoard._id;
-    let tour = 0;
-    
-    return board;
+// Validation de cette phase de jeu
+function isMyTurnVerification(joueurPrecedent, joueurSuivant) {
+  console.log('joueur = ' + joueurPrecedent);
+  console.log('req.body.user = ' + joueurSuivant);
+  if(joueurPrecedent == joueurSuivant) {
+    return true
+  } else {
+    return false
   }
 }
-/*
-function getBoard(idPlateau) {
-  console.log("Je rendre dans le getBoard");
-  Board3.findOne({ _id: idPlateau })
-    .then(board => { 
-      console.log('plateau récupéré' + board);
-      return board
-    })
-    .catch(err => console.log('erreur de récupération : ' + err));
-}
-*/
 
-// Validation de cette phase de jeu
-function getIssueVerification(issuePlateau) {
+function isNotOverVerification(issuePlateau) {
   if(issuePlateau == null) {
     return true
   } else {
@@ -119,11 +95,19 @@ function getIssueVerification(issuePlateau) {
 }
 
 // Enregistrement de cette phase de jeu
-function getAttribute(attribut) {
-  if (attribut === true) {
+function getAttribut(joueur) {
+  if (joueur === true) {
     return 'X';
   } else {
     return 'O'
+  }
+}
+
+function getJoueur(attribut) {
+  if (attribut === 'X') {
+    return true;
+  } else {
+    return false
   }
 }
 
@@ -131,11 +115,11 @@ function updateBoard(casesDuJeu, tourDuJeu, idBoard, caseSelectionnee, attribut)
   const newPlateau = new Board3({
     cases: casesDuJeu,
     tour: tourDuJeu,
-    joueur: getAttribute(attribut),
+    joueur: attribut,
     idPrecedent: idBoard
   });
 
-  newPlateau.cases[caseSelectionnee] = getAttribute(attribut);
+  newPlateau.cases[caseSelectionnee] = attribut;
   console.log('plateau mis à jour');
   
   return newPlateau;
@@ -148,8 +132,8 @@ function saveBoard(newPlateau) {
 }
 
 // Préparation de la prochaine phase de jeu
-function changePlayer(attribut) {
-  return !(attribut);
+function nextPlayer(joueur) {
+  return !(joueur);
 }
 
 function gameIssue(newPlateau) {
@@ -185,71 +169,53 @@ function gameIssue(newPlateau) {
   return newPlateau
 }
 
-// Fin du jeu
-function deleteBoard(idDernierPlateau) {
-    Board3.deleteOne({ _id: idDernierPlateau })
-      .then(() => console.log('plateau supprimé'))
-      .catch((err) => console.log(err))
-}
 
 /////  ROUTES FONCTIONNELLES  /////
 
 app.get("/getupdate", (req, res, next) => {
   Board3.findOne({ _id: idBoard })
     .then(board => { 
-      console.log('Get reçu' + board);
+      console.log('get reçu');
       
       let xIs = board.joueur == 'X' ? true : false;
-      let xIsNext = changePlayer(xIs);
+      let xIsNext = nextPlayer(xIs);
       let newSquares = board.cases;
-      console.log(newSquares);
+      let newIssue = board.issue;
+
       res.json({
         newSquares: newSquares,
-        xIsNext: xIsNext
+        xIsNext: xIsNext,
+        issue: newIssue
       })
     })
     .catch(err => console.log('erreur de récupération : ' + err));
 });
 
-
 app.post('/', (req, res, next) => {
   console.log('post reçu');
-  //console.log('CORPS DE LA REQUETE :');
-  //console.log(req.body);
-
-  // Création & Récupération du plateau de jeu
-  /*const init = initialiseBoard(req.body.init);
-  console.log('INITIALISATION : ' + init);*/
 
   // Validation de cette phase de jeu
-  let tourValide = getIssueVerification(issue);
-  tour += 1;
 
-  if (tourValide == true) {
+  let isMyTurn = isMyTurnVerification(joueur, req.body.user);
+  let isNotOver = isNotOverVerification(issue);
+
+  if (isMyTurn == true && isNotOver == true) {
     // Enregistrement de cette phase de jeu
-    const newBoard = updateBoard(req.body.casesDuJeu, tour, idBoard, req.body.caseSelectionnee, req.body.joueur);
+    tour += 1;
+    const newBoard = updateBoard(req.body.casesDuJeu, tour, idBoard, req.body.caseSelectionnee, req.body.user);
     const finalBoard = gameIssue(newBoard);
-    issue = finalBoard.issue;
     saveBoard(finalBoard);
-    idBoard = newBoard._id;
 
-    // Préparation de la prochaine phase de jeu
-    const xIsNext = changePlayer(req.body.joueur);     // Changer l'attribut du joueur
+    // Préparation du prochain tour
+    joueur = getAttribut(nextPlayer(getJoueur(finalBoard.joueur)));
+    console.log('le nouveau joueur est : ' + joueur);
+    issue = finalBoard.issue;
+    idBoard = newBoard._id;
 
     // Réponse
     res.send()
 
   }
-});
-
-app.delete('/', (req, res, next) => {
-  console.log('delete reçu');
-  console.log('CORPS DE LA REQUETE :');
-  console.log(req.body);
-
-  deleteBoard(firstBoard._id)
-
-  res.send('Terminator')
 });
 
 app.get('/db', (req, res) => {

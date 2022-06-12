@@ -5,7 +5,7 @@ const AXIOS = require('axios');
 const URL_TO_SERVER = "http://localhost:3000";
 
 var interval = null;
-const REFRENSHING_RATE = 5000;
+const REFRENSHING_RATE = 1000;
 
 function Square(props) {
   return (
@@ -54,7 +54,8 @@ class Game extends React.Component {
     this.state = {
       squares: Array(9).fill(null),
       user: null,
-      xIsNext: null
+      xIsNext: null,
+      issue: null,
     };
   }
 
@@ -67,8 +68,15 @@ class Game extends React.Component {
     this.setState({
       xIsNext: xTurn
     });
+  };
 
-  }
+  setIssue(issue) {
+    this.setState({
+      issue: issue
+    });
+  };
+
+
   getUpdate(leGame) {
     console.log("Getting update");
     AXIOS.get(URL_TO_SERVER + "/getupdate")
@@ -76,11 +84,13 @@ class Game extends React.Component {
       console.log(response.data);
       const newSquares = response.data.newSquares;
       const xTurn = response.data.xIsNext;
+      const newIssue = response.data.issue;
       
       leGame.setSquares(newSquares);
       leGame.setXturn(xTurn);
+      leGame.setIssue(newIssue);
 
-      if (calculateWinner(newSquares)) {
+      if (newIssue) {
         console.log("Clearing interval");
         clearInterval(interval);
       }
@@ -96,40 +106,16 @@ class Game extends React.Component {
     AXIOS.post(URL_TO_SERVER, {
       casesDuJeu: newSquares,
       caseSelectionnee: i,
-      joueur: leGame.state.xIsNext
+      user: leGame.state.user
     })
     .then(response => {
       console.log("Post reçu");
     });
   }
 
-  isMyTurn() {
-    if (this.state.user === 'X' && this.state.xIsNext)
-      return true;
-    else if (this.state.user === 'O' && !this.state.xIsNext)
-      return true;
-    else
-      return false;
-  }
-
-  handleClick(i) {
-    if(this.isMyTurn()) {
-      console.log("It is my turn");
-      const squares = this.state.squares.slice();
-       console.log("entered authorised");
-       this.setState({
-         squares: squares,
-        });
-        if (calculateWinner(squares) || squares[i]) {
-         return;
-         }
-        squares[i] = this.state.user;       
-
-      // send back new tab
+  handleClick(i, squares) {
       this.sendUpdate(squares, i);
-    }
 }
-
 selectPlayer(player) {
   if(!this.state.user) {
     this.setState({user: player});
@@ -141,7 +127,8 @@ selectPlayer(player) {
 }  
   
   render() {
-    const winner = calculateWinner(this.state.squares);
+    const winner = this.state.issue;
+
     const player = 'Player: ' + this.state.user;
     const joueur = this.state.user ? null : (<><ul><button onClick={() => this.selectPlayer("X")}>{"Joueur X"}</button></ul><ul><button onClick={() => this.selectPlayer("O")}>{"Joueur O"}</button></ul></>);
 
@@ -159,7 +146,7 @@ selectPlayer(player) {
           <Board
             squares={this.state.squares}
             onClick={(i) => {
-              this.handleClick(i);
+              this.handleClick(i, this.state.squares);
             }
             }
           />
@@ -168,7 +155,6 @@ selectPlayer(player) {
         <div>{player}</div>
           <div>{status}</div>
           <div>{joueur}</div>
-          <div><button onClick={() => this.setSquares([null, null, null, null, null, null, null, null, null])}>{"New Game"}</button></div>
         </div>
       </div>
     );
@@ -179,23 +165,3 @@ selectPlayer(player) {
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<Game />);
-
-function calculateWinner(squares) {
-  const lines = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6],
-  ];
-  for (let i = 0; i < lines.length; i++) {
-    const [a, b, c] = lines[i];
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
-    }
-  }
-  return null;
-}
