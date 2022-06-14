@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const path_react_app = '../client_3000_copy/build';
+const path_react_app = '../client/build';
 const app = express();
 const Board = require('./models/Board');
 
