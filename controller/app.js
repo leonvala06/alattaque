@@ -1,11 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const path_react_app = '../client/build';
+const path_react_app = './build';
 const app = express();
-const Board = require('./models/Board');
+
+// Creation of a static version of React
+app.use(express.static(path_react_app));
 
 // URL of the local database
-const url = "mongodb://localhost:27017/"
+const url = "mongodb://mongo:27017/"
 
 // database connexion
 mongoose.connect(url,  
@@ -17,6 +19,17 @@ mongoose.connect(url,
 const db = mongoose.connection;
 db.on("error", (error) => console.error(error));
 db.once("open", () => console.log("Connected to the database !"));
+
+// Models - Board
+const boardSchema = mongoose.Schema({
+    squares: { type: Array, required: true },
+    turn: { type: Number, required: true },
+    attribute: { type: String },
+    issue: { type: String }
+  });
+
+const Board = mongoose.model('board', boardSchema);
+  
 
 // Let's drop the collection
 db.dropCollection(
@@ -42,8 +55,6 @@ let attribute = firstBoard.attribute;
 let issue = firstBoard.issue;
 let idBoard = firstBoard._id;
 
-// Creation of a static version of React
-app.use(express.static(path_react_app));
 // Conversion in JSON
 app.use(express.json());
 // To avoid connexion problems which the user could have for security causes
